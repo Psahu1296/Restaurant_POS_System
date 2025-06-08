@@ -1,12 +1,13 @@
+// models/orderModel.js
 const mongoose = require("mongoose");
 
 const orderSchema = new mongoose.Schema({
     customerDetails: {
         name: { type: String, required: true },
-        phone: { type: String, requried: true},
+        phone: { type: String, required: true},
         guests: { type: Number, required: true },
     },
-    orderStatus: {
+    orderStatus: { // e.g., "In Progress", "Completed", "Cancelled"
         type: String,
         required: true
     },
@@ -21,10 +22,17 @@ const orderSchema = new mongoose.Schema({
     },
     items: [],
     table: { type: mongoose.Schema.Types.ObjectId, ref: "Table" },
-    paymentMethod: String,
-    paymentData: {
+    paymentMethod: String, // e.g., "Cash", "Card", "Razorpay", "Pay Later"
+    paymentData: { // Stores Razorpay specific data if used
         razorpay_order_id: String,
         razorpay_payment_id: String
+    },
+    // NEW FIELD: paymentStatus
+    paymentStatus: { // e.g., "Pending", "Paid", "Refunded"
+        type: String,
+        enum: ["Pending", "Paid", "Refunded"], // Define allowed values
+        default: "Pending", // Default to pending if not explicitly set
+        required: true,
     }
 }, { timestamps : true } );
 

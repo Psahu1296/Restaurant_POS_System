@@ -370,14 +370,14 @@ export const salads = [
 
 
 export const menus = [
-  { id: 1, name: "Starters", bgColor: "#b73e3e" ,icon: "🍲", items: startersItem },
+  // { id: 1, name: "Starters", bgColor: "#b73e3e" ,icon: "🍲", items: startersItem },
   { id: 2, name: "Main Course", bgColor: "#5b45b0" ,icon: "🍛", items: mainCourse },
-  { id: 3, name: "Beverages", bgColor: "#7f167f" ,icon: "🍹", items: beverages },
-  { id: 4, name: "Soups", bgColor: "#735f32" ,icon: "🍜", items: soups },
-  { id: 5, name: "Desserts", bgColor: "#1d2569" ,icon: "🍰", items: desserts },
-  { id: 6, name: "Pizzas", bgColor: "#285430" ,icon: "🍕", items: pizzas },
-  { id: 7, name: "Alcoholic Drinks", bgColor: "#b73e3e" ,icon: "🍺", items: alcoholicDrinks },
-  { id: 8, name: "Salads", bgColor: "#5b45b0" ,icon: "🥗", items: salads }
+//   { id: 3, name: "Beverages", bgColor: "#7f167f" ,icon: "🍹", items: beverages },
+//   { id: 4, name: "Soups", bgColor: "#735f32" ,icon: "🍜", items: soups },
+//   { id: 5, name: "Desserts", bgColor: "#1d2569" ,icon: "🍰", items: desserts },
+//   { id: 6, name: "Pizzas", bgColor: "#285430" ,icon: "🍕", items: pizzas },
+//   { id: 7, name: "Alcoholic Drinks", bgColor: "#b73e3e" ,icon: "🍺", items: alcoholicDrinks },
+//   { id: 8, name: "Salads", bgColor: "#5b45b0" ,icon: "🥗", items: salads }
 ]
 
 export const metricsData = [

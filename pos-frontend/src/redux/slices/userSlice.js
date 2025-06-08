@@ -1,12 +1,12 @@
 import { createSlice } from "@reduxjs/toolkit";
 
 const initialState = {
-    _id: "",
-    name: "",
-    email : "",
-    phone: "",
-    role: "",
-    isAuth: false
+    _id: "Abcdsips",
+    name: "Pushpendra Sahu",
+    email : "pushpendra.sahu112@gmail.com",
+    phone: "9755670878",
+    role: "admin",
+    isAuth: true
 }
 
 const userSlice = createSlice({

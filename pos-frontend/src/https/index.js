@@ -23,5 +23,21 @@ export const verifyPaymentRazorpay = (data) =>
 // Order Endpoints
 export const addOrder = (data) => axiosWrapper.post("/api/order/", data);
 export const getOrders = () => axiosWrapper.get("/api/order");
-export const updateOrderStatus = ({ orderId, orderStatus }) =>
-  axiosWrapper.put(`/api/order/${orderId}`, { orderStatus });
+export const updateOrderStatus = ({ orderId, orderStatus ,paymentStatus }) =>
+  axiosWrapper.put(`/api/order/${orderId}`, { orderStatus, paymentStatus });
+export const updatePaymentStatus = ({ orderId, paymentStatus }) =>
+  axiosWrapper.put(`/api/order/${orderId}`, { paymentStatus });
+
+// Dishes Endpoints
+export const addDish = (data) => axiosWrapper.post("/api/dishes/", data);
+export const getDishes = () => axiosWrapper.get("/api/dishes");
+export const updateDish = (dishId, dishData) =>
+  axiosWrapper.put(`/api/dishes/${dishId}`, dishData);
+export const deleteDish = (dishId) => axiosWrapper.delete(`/api/dishes/${dishId}`);
+export const getFrequentDishes = () => axiosWrapper.get(`/api/dishes/frequent`);
+
+// Earnings
+export const getDailyEarnings = () => axiosWrapper.get(`/api/earnings/daywise`);
+// param   periodType: 'day', 'week', 'month', 'year'
+export const getPeriodEarnings = (periodType) => axiosWrapper.get(`/api/earnings/${periodType}`);
+

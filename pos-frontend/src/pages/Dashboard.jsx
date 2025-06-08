@@ -4,6 +4,8 @@ import { BiSolidDish } from "react-icons/bi";
 import Metrics from "../components/dashboard/Metrics";
 import RecentOrders from "../components/dashboard/RecentOrders";
 import Modal from "../components/dashboard/Modal";
+import AddDishModal from "../components/dashboard/AddDishModal";
+import DishesList from "../components/dishes/Dishes";
 
 const buttons = [
   { label: "Add Table", icon: <MdTableBar />, action: "table" },
@@ -11,19 +13,18 @@ const buttons = [
   { label: "Add Dishes", icon: <BiSolidDish />, action: "dishes" },
 ];
 
-const tabs = ["Metrics", "Orders", "Payments"];
+const tabs = ["Metrics", "Orders", "Dishes"];
 
 const Dashboard = () => {
-
   useEffect(() => {
-    document.title = "POS | Admin Dashboard"
-  }, [])
+    document.title = "POS | Admin Dashboard";
+  }, []);
 
-  const [isTableModalOpen, setIsTableModalOpen] = useState(false);
+  const [modalType, setModalType] = useState("");
   const [activeTab, setActiveTab] = useState("Metrics");
 
   const handleOpenModal = (action) => {
-    if (action === "table") setIsTableModalOpen(true);
+    setModalType(action);
   };
 
   return (
@@ -63,13 +64,10 @@ const Dashboard = () => {
 
       {activeTab === "Metrics" && <Metrics />}
       {activeTab === "Orders" && <RecentOrders />}
-      {activeTab === "Payments" && 
-        <div className="text-white p-6 container mx-auto">
-          Payment Component Coming Soon
-        </div>
-      }
+      {activeTab === "Dishes" && <DishesList />}
 
-      {isTableModalOpen && <Modal setIsTableModalOpen={setIsTableModalOpen} />}
+      {modalType === 'table' && <Modal setIsTableModalOpen={() => setModalType('')} />}
+      {modalType === 'dishes' && <AddDishModal isOpen={modalType === 'dishes'} onClose={() => setModalType('')} onDishAdded={() => setModalType('')} />}
     </div>
   );
 };

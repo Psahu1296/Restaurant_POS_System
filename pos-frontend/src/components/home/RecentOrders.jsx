@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { FaSearch } from "react-icons/fa";
 import OrderList from "./OrderList";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
@@ -18,6 +18,15 @@ const RecentOrders = () => {
     enqueueSnackbar("Something went wrong!", { variant: "error" });
   }
 
+  const onGoingOrders = useMemo(() => {
+    let res = [];
+    res = resData?.data.data.filter(
+      (order) => order?.orderStatus === "In Progress"
+    );
+    return res;
+  }, [resData?.data.data]);
+
+  console.log(resData?.data.data);  
   return (
     <div className="px-8 mt-6">
       <div className="bg-[#1a1a1a] w-full h-[450px] rounded-lg">
@@ -41,12 +50,12 @@ const RecentOrders = () => {
 
         {/* Order list */}
         <div className="mt-4 px-6 overflow-y-scroll h-[300px] scrollbar-hide">
-          {resData?.data.data.length > 0 ? (
-            resData.data.data.map((order) => {
+          {onGoingOrders?.length > 0 ? (
+            onGoingOrders?.map((order) => {
               return <OrderList key={order._id} order={order} />;
             })
           ) : (
-            <p className="col-span-3 text-gray-500">No orders available</p>
+            <p className="col-span-3 text-gray-500">No On going orders available</p>
           )}
         </div>
       </div>

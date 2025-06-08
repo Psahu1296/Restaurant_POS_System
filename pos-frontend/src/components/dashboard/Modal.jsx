@@ -23,13 +23,13 @@ const Modal = ({ setIsTableModalOpen }) => {
   };
 
   const handleCloseModal = () => {
-    setIsTableModalOpen(false);
+    setIsTableModalOpen();
   };
 
   const tableMutation = useMutation({
     mutationFn: (reqData) => addTable(reqData),
     onSuccess: (res) => {
-        setIsTableModalOpen(false);
+        setIsTableModalOpen();
         const { data } = res;
         enqueueSnackbar(data.message, { variant: "success" })
     },

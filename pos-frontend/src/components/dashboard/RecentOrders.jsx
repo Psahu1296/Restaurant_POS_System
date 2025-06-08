@@ -1,28 +1,58 @@
 import React from "react";
 import { orders } from "../../constants";
 import { GrUpdate } from "react-icons/gr";
-import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { enqueueSnackbar } from "notistack";
-import { getOrders, updateOrderStatus } from "../../https/index";
+import {
+  getOrders,
+  updateOrderStatus,
+  updatePaymentStatus,
+  updateTable,
+} from "../../https/index";
 import { formatDateAndTime } from "../../utils";
+import { removeCustomer } from "../../redux/slices/customerSlice";
+import { removeAllItems } from "../../redux/slices/cartSlice";
 
 const RecentOrders = () => {
   const queryClient = useQueryClient();
-  const handleStatusChange = ({orderId, orderStatus}) => {
-    console.log(orderId)
-    orderStatusUpdateMutation.mutate({orderId, orderStatus});
+  const handleStatusChange = ({ orderId, orderStatus }) => {
+    console.log(orderId);
+    orderStatusUpdateMutation.mutate({ orderId, orderStatus });
   };
 
   const orderStatusUpdateMutation = useMutation({
-    mutationFn: ({orderId, orderStatus}) => updateOrderStatus({orderId, orderStatus}),
+    mutationFn: ({ orderId, orderStatus }) =>
+      updateOrderStatus({
+        orderId,
+        orderStatus,
+        paymentStatus: orderStatus === "Complete" ? "Paid" : "Pending",
+      }),
     onSuccess: (data) => {
-      enqueueSnackbar("Order status updated successfully!", { variant: "success" });
+      enqueueSnackbar("Order status updated successfully!", {
+        variant: "success",
+      });
       queryClient.invalidateQueries(["orders"]); // Refresh order list
+      if (orderStatus === "Complete") {
+        const tableData = {
+          status: "Available",
+          orderId: data._id,
+          tableId: data.table,
+        };
+
+        setTimeout(() => {
+          tableUpdateMutation.mutate(tableData);
+        }, 1500);
+      }
     },
     onError: () => {
       enqueueSnackbar("Failed to update order status!", { variant: "error" });
-    }
-  })
+    },
+  });
 
   const { data: resData, isError } = useQuery({
     queryKey: ["orders"],
@@ -36,7 +66,19 @@ const RecentOrders = () => {
     enqueueSnackbar("Something went wrong!", { variant: "error" });
   }
 
-  console.log(resData.data.data);
+  const tableUpdateMutation = useMutation({
+    mutationFn: (reqData) => updateTable(reqData),
+    onSuccess: (resData) => {
+      console.log(resData);
+      dispatch(removeCustomer());
+      dispatch(removeAllItems());
+    },
+    onError: (error) => {
+      console.log(error);
+    },
+  });
+
+  console.log(resData?.data?.data);
 
   return (
     <div className="container mx-auto bg-[#262626] p-4 rounded-lg">
@@ -47,14 +89,15 @@ const RecentOrders = () => {
         <table className="w-full text-left text-[#f5f5f5]">
           <thead className="bg-[#333] text-[#ababab]">
             <tr>
-              <th className="p-3">Order ID</th>
+              {/* <th className="p-3">Order ID</th> */}
               <th className="p-3">Customer</th>
               <th className="p-3">Status</th>
               <th className="p-3">Date & Time</th>
               <th className="p-3">Items</th>
               <th className="p-3">Table No</th>
               <th className="p-3">Total</th>
-              <th className="p-3 text-center">Payment Method</th>
+              <th className="p-3">Payment Method</th>
+              <th className="p-3">Payment Status</th>
             </tr>
           </thead>
           <tbody>
@@ -63,7 +106,7 @@ const RecentOrders = () => {
                 key={index}
                 className="border-b border-gray-600 hover:bg-[#333]"
               >
-                <td className="p-4">#{Math.floor(new Date(order.orderDate).getTime())}</td>
+                {/* <td className="p-4">#{Math.floor(new Date(order.orderDate).getTime())}</td> */}
                 <td className="p-4">{order.customerDetails.name}</td>
                 <td className="p-4">
                   <select
@@ -73,7 +116,12 @@ const RecentOrders = () => {
                         : "text-yellow-500"
                     }`}
                     value={order.orderStatus}
-                    onChange={(e) => handleStatusChange({orderId: order._id, orderStatus: e.target.value})}
+                    onChange={(e) =>
+                      handleStatusChange({
+                        orderId: order._id,
+                        orderStatus: e.target.value,
+                      })
+                    }
                   >
                     <option className="text-yellow-500" value="In Progress">
                       In Progress
@@ -81,14 +129,26 @@ const RecentOrders = () => {
                     <option className="text-green-500" value="Ready">
                       Ready
                     </option>
+                    <option className="text-green-500" value="Complete">
+                      Complete
+                    </option>
                   </select>
                 </td>
                 <td className="p-4">{formatDateAndTime(order.orderDate)}</td>
                 <td className="p-4">{order.items.length} Items</td>
                 <td className="p-4">Table - {order.table.tableNo}</td>
                 <td className="p-4">₹{order.bills.totalWithTax}</td>
+                <td className="p-4">{order.paymentMethod}</td>
                 <td className="p-4">
-                  {order.paymentMethod}
+                  {order.paymentStatus === "Pending" ? (
+                    <button className="bg-[#f6b100] px-2 py-1  font-medium rounded-lg">
+                      Pay
+                    </button>
+                  ) : (
+                    <button className="text-[#02ca3a] px-2 py-1  font-medium  rounded-lg">
+                      Print Invoice
+                    </button>
+                  )}
                 </td>
               </tr>
             ))}
