@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:6.0 # Use a specific version for stability
+    container_name: pos_mongodb
+    ports:
+      - "27017:27017" # Map host port 27017 to container port 27017
+    volumes:
+      - mongodb_data:/data/db # Persist MongoDB data to a named volume
+    # Optional: For basic authentication if you want to set up user/pass
+    # environment:
+    #   MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME:-admin}
+    #   MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD:-password}
+    restart: unless-stopped # Always restart unless manually stopped
+
+  app: # This service will contain both your frontend and backend
+    build:
+      context: . # Build from the current directory (project root)
+      dockerfile: Dockerfile # Points to the new Dockerfile in the project root
+    container_name: pos_app
+    ports:
+      - "5000:5000" # Map host port 5000 to container port 5000 (where Node.js listens)
+    depends_on:
+      - mongodb # The app container depends on MongoDB starting first
+    environment:
+      # Pass environment variables to the app container.
+      # MONGODB_URI should point to the 'mongodb' service name within the Docker network
+      MONGODB_URI: mongodb://mongodb:27017/posdb
+      NODE_ENV: production # Ensure backend runs in production mode
+      # Ensure config.port in your app.js matches the exposed port if hardcoded
+      # Or pass it here if your app.js uses process.env.PORT
+      # PORT: 5000 # Example if app.js relies on process.env.PORT
+      # Pass through any other environment variables your backend needs (e.g., Razorpay keys)
+      VITE_RAZORPAY_KEY_ID: ${VITE_RAZORPAY_KEY_ID} # Example: from your host .env file
+    restart: unless-stopped
+
+volumes:
+  mongodb_data: # Define the named volume for MongoDB data persistence

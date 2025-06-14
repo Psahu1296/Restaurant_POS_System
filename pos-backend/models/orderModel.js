@@ -33,6 +33,16 @@ const orderSchema = new mongoose.Schema({
         enum: ["Pending", "Paid", "Refunded"], // Define allowed values
         default: "Pending", // Default to pending if not explicitly set
         required: true,
+    },
+    amountPaid: { // Actual amount paid by the customer for this order
+        type: Number,
+        default: 0,
+        min: 0
+    },
+    balanceDueOnOrder: { // Remaining amount to be paid for THIS specific order
+        type: Number,
+        default: 0,
+        min: 0
     }
 }, { timestamps : true } );
 

@@ -42,7 +42,6 @@ const DishesList = () => {
     },
   });
 
-  console.log(dishes);
   //   Filter dishes based on search term
   const filteredDishes = useMemo(() => {
     if (!dishes?.data.data.length) return [];
@@ -102,7 +101,7 @@ const DishesList = () => {
             No dishes found matching your search.
           </p>
         ) : (
-          <div className="flex flex-col gap-6">
+          <div className="flex flex-wrap gap-6">
             {filteredDishes.map((dish) => (
               <DishCard
                 key={dish._id}

@@ -1,8 +1,8 @@
+// components/dishes/DishCard.jsx
 import React from "react";
-import { FaEdit, FaTrash } from "react-icons/fa"; // Import edit and delete icons from react-icons
+import { FaEdit, FaTrash } from "react-icons/fa";
 import { Img } from "react-image"; // Import react-image
 
-// Define chip colors based on category
 const CATEGORY_COLORS = {
   veg: "bg-green-500 text-green-900",
   non_veg: "bg-red-500 text-red-900",
@@ -10,46 +10,63 @@ const CATEGORY_COLORS = {
 };
 
 const DishCard = ({ dish, onEdit, onDelete }) => {
-  // Get the appropriate color class for the category chip
   const chipColorClass =
     CATEGORY_COLORS[dish.category] || "bg-gray-500 text-gray-900";
 
   return (
-    <div className="flex items-center bg-[#1f1f1f] rounded-lg shadow-md overflow-hidden text-[#f5f5f5] p-4 border border-gray-700">
+    <div className="flex flex-col bg-[#1f1f1f] rounded-lg pb-3 shadow-md overflow-hidden text-[#f5f5f5] h-[260px] w-[260px] border border-gray-700">
       {/* Circular Image */}
-      <div className="w-16 h-16 rounded-full overflow-hidden mr-4 flex-shrink-0">
+      <div className="w-full h-24 rounded-s-lg rounded-e-lg overflow-hidden flex-shrink-0">
         <Img
-          src={[dish.image, "https://via.placeholder.com/150?text=No+Image"]} // Fallback image using react-image
+          src={[dish.image, "https://via.placeholder.com/150?text=No+Image"]}
           alt={dish.name}
           className="w-full h-full object-cover"
-          loader={<div className="w-full h-full bg-gray-700 animate-pulse" />} // Optional loading placeholder
+          loader={<div className="w-full h-full bg-gray-700 animate-pulse" />}
           unloader={
-            <div className="w-full h-full bg-gray-700 flex items-center justify-center">
-              Image failed to load
+            <div className="w-full h-full bg-gray-700 flex items-center justify-center text-xs text-gray-400">
+              Img Error
             </div>
-          } // Optional error placeholder
+          }
         />
       </div>
 
-      {/* Dish Details */}
-      <div className="flex gap-6 flex-grow items-center">
-        <h3 className="text-lg font-semibold mb-1">{dish.name}</h3>
-        <p className="text-sm text-gray-400">Orders: {dish.numberOfOrders}</p>
-        
-        <span
-          className={`px-2 py-1 rounded-full text-xs font-medium ${chipColorClass} mr-4`}
-        >
-          {dish.category.replace(/_/g, " ").toUpperCase()}
-        </span>
+      {/* Dish Details and Prices */}
+      <div className="flex flex-col flex-grow items-start px-3">
+        <div className="flex w-full justify-between  my-2">
+          <div className="w-[80%]">
+            <h3 className="text-lg font-semibold">{dish.name}</h3>
+            <p className="text-sm text-gray-400">
+              Orders: {dish.numberOfOrders}
+            </p>
+          </div>
+          {/* Category Chip */}
+          <span
+            className={`px-2 py-1 rounded-full text-xs font-medium ${chipColorClass}  flex-shrink-0 h-fit`}
+          >
+            {dish.category.replace(/_/g, " ").toUpperCase()}
+          </span>
+        </div>
+
+        {/* Display Variants and Prices (UPDATED) */}
+        <div className="flex w-full flex-col flex-wrap gap-x-3 justify-between gap-y-1 text-yellow-400 font-semibold">
+          {dish.variants && dish.variants.length > 0 ? (
+            dish.variants.map((variant, index) => (
+              <span key={index}>
+                {variant.size}: ₹
+                {variant.price ? variant.price.toFixed(2) : "N/A"}
+              </span>
+            ))
+          ) : (
+            <span className="text-red-400">No price set</span>
+          )}
+        </div>
       </div>
 
-      {/* Category Chip */}
-
       {/* Action Icons */}
-      <div className="flex items-center space-x-2 gap-6">
+      <div className="flex items-center justify-center space-x-2 gap-6 flex-shrink-0">
         {onEdit && (
           <button
-            onClick={() => onEdit(dish._id)} // Pass dish ID to edit handler
+            onClick={() => onEdit(dish)} // Pass entire dish object for easier prefilling edit modal
             className="text-blue-500 hover:text-blue-700 transition-colors"
             aria-label={`Edit ${dish.name}`}
           >
@@ -58,16 +75,13 @@ const DishCard = ({ dish, onEdit, onDelete }) => {
         )}
         {onDelete && (
           <button
-            onClick={() => onDelete(dish._id)} // Pass dish ID to delete handler
+            onClick={() => onDelete(dish._id)}
             className="text-red-500 hover:text-red-700 transition-colors"
             aria-label={`Delete ${dish.name}`}
           >
             <FaTrash size={20} />
           </button>
         )}
-        <p className="text-lg font-bold text-yellow-400">
-          ₹{dish.price ? dish.price.toFixed(2) : "N/A"}
-        </p>
       </div>
     </div>
   );

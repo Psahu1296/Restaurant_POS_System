@@ -39,7 +39,7 @@ const MenuContainer = () => {
 
   return (
     <>
-      <div className="flex items-center gap-4 bg-[#1f1f1f] rounded-[15px] mx-8 px-5 py-2 w-[500px]  border border-[#2a2a2a] focus-within:border-[#F6B100]">
+      <div className="flex items-center gap-2 bg-[#1f1f1f] rounded-[15px] mx-8 px-4 py-2 w-[500px]  border border-[#2a2a2a] focus-within:border-[#F6B100]">
         <FaSearch className="text-[#f5f5f5]" />
         <input
           type="text"
@@ -51,7 +51,7 @@ const MenuContainer = () => {
 
       <hr className="border-[#2a2a2a] border-t-2 mt-4 " />
 
-      <div className="flex flex-wrap gap-8 px-10 py-4 w-full  overflow-y-auto justify-center max-h-[calc(100vh-22rem)]">
+      <div className="flex flex-wrap gap-4 px-4 py-4 w-full  overflow-y-auto justify-center flex-[3]">
         {filteredDishes.map((item) => (
           <MenuItem key={item._id} item={item} />
         ))}

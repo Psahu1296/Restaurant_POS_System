@@ -1,3 +1,4 @@
+// models/dishModel.js
 const mongoose = require("mongoose");
 
 const dishSchema = new mongoose.Schema(
@@ -14,7 +15,7 @@ const dishSchema = new mongoose.Schema(
     },
     numberOfOrders: {
       type: Number,
-      default: 0, // Initialize to 0, will be incremented/decremented by order logic
+      default: 0, // Will be incremented/decremented by order logic
     },
     type: {
       type: String,
@@ -26,11 +27,23 @@ const dishSchema = new mongoose.Schema(
       enum: ["veg", "non_veg", "egg"],
       required: true,
     },
-    price: {
-      type: Number,
-      required: true,
-      min: 0,
-    },
+    // REMOVED: price field
+    // NEW FIELD: variants array
+    variants: [
+      {
+        size: {
+          type: String,
+          enum: ["Half", "Full", "Regular", "Small", "Large"], // Define common sizes
+          required: true,
+        },
+        price: {
+          type: Number,
+          required: true,
+          min: 0,
+        },
+        _id: false, // Prevents Mongoose from creating a separate _id for each sub-document in the array
+      },
+    ],
     description: {
       type: String,
       trim: true,
@@ -40,14 +53,13 @@ const dishSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
-    // NEW FIELD ADDED HERE:
     isFrequent: {
       type: Boolean,
-      default: false, // Default to false, so only explicitly marked dishes are frequent
+      default: false,
     },
   },
   {
-    timestamps: true, // Adds createdAt and updatedAt fields
+    timestamps: true,
   }
 );
 

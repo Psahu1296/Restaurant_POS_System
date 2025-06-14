@@ -8,11 +8,20 @@ const { default: mongoose } = require("mongoose");
 // @access  Private (e.g., Admin)
 const addDish = async (req, res, next) => {
   try {
-    const { image, name, type, category, price, description, isAvailable, isFrequent } = req.body; // Include isFrequent
+    // UPDATED: 'price' removed, 'variants' added to destructuring
+    const { image, name, type, category, variants, description, isAvailable, isFrequent } = req.body;
 
-    if (!image || !name || !type || !category || price === undefined || price === null) {
-      const error = createHttpError(400, "Missing required dish fields (image, name, type, category, price)!");
+    // UPDATED VALIDATION: Check for 'variants' array and its content
+    if (!image || !name || !type || !category || !variants || !Array.isArray(variants) || variants.length === 0) {
+      const error = createHttpError(400, "Missing required dish fields (image, name, type, category, variants) or variants is empty!");
       return next(error);
+    }
+    // Further validate each variant
+    for (const variant of variants) {
+      if (!variant.size || variant.price === undefined || variant.price === null || variant.price < 0) {
+        const error = createHttpError(400, "Each dish variant must have a valid size and non-negative price.");
+        return next(error);
+      }
     }
 
     const existingDish = await Dish.findOne({ name });
@@ -26,10 +35,10 @@ const addDish = async (req, res, next) => {
       name,
       type,
       category,
-      price,
+      variants, // UPDATED: Pass variants to the constructor
       description,
       isAvailable,
-      isFrequent // Assign the new field
+      isFrequent
     });
 
     await dish.save();
@@ -41,7 +50,7 @@ const addDish = async (req, res, next) => {
   }
 };
 
-// @desc    Get all dishes
+// @desc    Get all dishes (No change needed here, as it fetches the new schema structure)
 // @route   GET /api/dishes
 // @access  Public
 const getDishes = async (req, res, next) => {
@@ -53,18 +62,17 @@ const getDishes = async (req, res, next) => {
   }
 };
 
-// @desc    Get only frequently ordered dishes
+// @desc    Get only frequently ordered dishes (No change needed here, as it fetches the new schema structure)
 // @route   GET /api/dishes/frequent
 // @access  Public
 const getFrequentDishes = async (req, res, next) => {
   try {
-    // You can make the limit configurable via query parameters (e.g., ?limit=5)
-    const limit = parseInt(req.query.limit) || 10; // Default to top 10
-    const minOrders = parseInt(req.query.minOrders) || 1; // Only show dishes with at least 1 order
+    const limit = parseInt(req.query.limit) || 10;
+    const minOrders = parseInt(req.query.minOrders) || 1;
 
-    const frequentDishes = await Dish.find({ numberOfOrders: { $gte: minOrders } }) // Filter by minimum orders
-                                     .sort({ numberOfOrders: -1, name: 1 }) // Sort by orders (desc), then name (asc)
-                                     .limit(limit); // Limit the results
+    const frequentDishes = await Dish.find({ numberOfOrders: { $gte: minOrders } })
+                                     .sort({ numberOfOrders: -1, name: 1 })
+                                     .limit(limit);
 
     res.status(200).json({ success: true, data: frequentDishes });
   } catch (error) {
@@ -72,7 +80,7 @@ const getFrequentDishes = async (req, res, next) => {
   }
 };
 
-// @desc    Get dish by ID
+// @desc    Get dish by ID (No change needed here)
 // @route   GET /api/dishes/:id
 // @access  Public
 const getDishById = async (req, res, next) => {
@@ -103,6 +111,7 @@ const getDishById = async (req, res, next) => {
 const updateDish = async (req, res, next) => {
   try {
     const { id } = req.params;
+    // UPDATED: Ensure 'variants' is part of updates and is valid if present
     const updates = req.body;
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -110,14 +119,24 @@ const updateDish = async (req, res, next) => {
       return next(error);
     }
 
-    // You can now pass 'isFrequent' in the updates object directly.
-    // If 'name' is being updated, you might want to add a check for uniqueness
-    // if (updates.name) { /* check for existing dish with new name */ }
+    // UPDATED VALIDATION (optional, but good if variants can be updated):
+    if (updates.variants !== undefined) {
+      if (!Array.isArray(updates.variants) || updates.variants.length === 0) {
+        const error = createHttpError(400, "Variants must be a non-empty array if provided for update.");
+        return next(error);
+      }
+      for (const variant of updates.variants) {
+        if (!variant.size || variant.price === undefined || variant.price === null || variant.price < 0) {
+          const error = createHttpError(400, "Each updated dish variant must have a valid size and non-negative price.");
+          return next(error);
+        }
+      }
+    }
 
     const dish = await Dish.findByIdAndUpdate(
       id,
-      { $set: updates },
-      { new: true, runValidators: true }
+      { $set: updates }, // $set will update only the fields provided in 'updates', including 'variants'
+      { new: true, runValidators: true } // runValidators is crucial here for variants array
     );
 
     if (!dish) {
@@ -129,13 +148,12 @@ const updateDish = async (req, res, next) => {
       .status(200)
       .json({ success: true, message: "Dish updated successfully!", data: dish });
   }
-  // This catch block might need refinement if you want to handle specific validation errors differently
   catch (error) {
     next(error);
   }
 };
 
-// @desc    Delete a dish
+// @desc    Delete a dish (No change needed here)
 // @route   DELETE /api/dishes/:id
 // @access  Private (e.g., Admin)
 const deleteDish = async (req, res, next) => {

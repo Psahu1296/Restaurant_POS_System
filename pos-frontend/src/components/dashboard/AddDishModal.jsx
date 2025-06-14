@@ -2,9 +2,9 @@
 import React, { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { IoMdClose } from 'react-icons/io';
-import { useMutation, useQueryClient } from '@tanstack/react-query'; // Import useQueryClient
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { enqueueSnackbar } from 'notistack';
-import { useForm } from 'react-hook-form';
+import { useForm, useFieldArray } from 'react-hook-form'; // Import useFieldArray
 import { addDish, updateDish } from '../../https'; // Ensure updateDish is imported
 
 // Define your constants for dish types and categories
@@ -24,70 +24,64 @@ const DISH_CATEGORIES = [
   'egg',
 ];
 
-// Define the shape of the data for a dish (from your backend schema)
-// This is for clarity; remember it's JavaScript so it's not strictly enforced at runtime
-// but helps in understanding the data structure.
-// _id is for existing dishes (edit mode)
-const DISH_DATA_SHAPE = {
-  _id: null, // Only present when editing
-  image: '',
-  name: '',
-  price: 0,
-  type: 'main_course',
-  category: 'veg',
-  description: '',
-  isAvailable: true,
-  isFrequent: false,
-  numberOfOrders: 0, // This field is typically managed by the backend
-};
+// Define common sizes for variants (from dish model enum)
+const DISH_VARIANT_SIZES = ["Half", "Full", "Regular", "Small", "Large"];
+
+// This is the structure the form will handle (matches backend schema for Dish input)
+// (Conceptual in JS, but good for understanding)
+// {
+//   image: string;
+//   name: string;
+//   type: string;
+//   category: string;
+//   variants: Array<{ size: string; price: number; }>; // Array of variant objects
+//   description?: string;
+//   isAvailable: boolean;
+//   isFrequent: boolean;
+// }
 
 const AddDishModal = ({ isOpen, onClose, onDishAdded, dish = null }) => {
-  const queryClient = useQueryClient(); // Get the query client instance
+  const queryClient = useQueryClient();
 
-  // Determine if it's an edit operation
   const isEditMode = !!dish;
   const modalTitle = isEditMode ? "Edit Dish" : "Add New Dish";
   const submitButtonText = isEditMode ? "Update Dish" : "Add Dish";
 
-  // react-hook-form setup
   const {
     register,
     handleSubmit,
     reset,
-    formState: { errors, isSubmitting: isFormSubmitting }, // Renamed isSubmitting from useForm
+    control, // Needed for useFieldArray
+    formState: { errors, isSubmitting: isFormSubmitting },
+    watch, // Optional: to watch variants changes for debugging or conditional rendering
   } = useForm({
-    // Set default values based on whether a dish prop is provided
-    defaultValues: isEditMode ? {
-      // Use the dish data, but provide fallbacks in case a field is missing from `dish`
-      image: dish.image || '',
-      name: dish.name || '',
-      price: dish.price || 0,
-      type: dish.type || 'main_course',
-      category: dish.category || 'veg',
-      description: dish.description || '',
-      isAvailable: dish.isAvailable !== undefined ? dish.isAvailable : true,
-      isFrequent: dish.isFrequent !== undefined ? dish.isFrequent : false,
-    } : {
+    defaultValues: {
       image: '',
       name: '',
-      price: 0,
       type: 'main_course',
       category: 'veg',
+      variants: [{ size: '', price: '' }], // Initialize with one empty variant row
       description: '',
       isAvailable: true,
       isFrequent: false,
     },
   });
 
-  // TanStack Query mutation for adding a dish
+  // Setup useFieldArray for managing the 'variants' array
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: 'variants', // The name of the array field in your form data
+  });
+
+  // TanStack Query mutations
   const addDishMutation = useMutation({
     mutationFn: (dishData) => addDish(dishData),
     onSuccess: (res) => {
       enqueueSnackbar(res.message || "Dish added successfully!", { variant: "success" });
-      queryClient.invalidateQueries(['dishes']); // Invalidate dishes list
-      reset(); // Reset form fields on success
-      onClose(); // Close the modal
-      onDishAdded && onDishAdded(); // Trigger optional callback
+      queryClient.invalidateQueries(['dishes']);
+      reset(); // Resets form, including variants, to defaultValues
+      onClose();
+      onDishAdded && onDishAdded();
     },
     onError: (error) => {
       const errorMessage = error.response?.data?.message || "Failed to add dish. Please try again.";
@@ -96,19 +90,13 @@ const AddDishModal = ({ isOpen, onClose, onDishAdded, dish = null }) => {
     },
   });
 
-  // TanStack Query mutation for updating a dish
-  const {
-    mutate: updateDishMutation,
-    isPending: isUpdating, // Renamed for clarity in loading state
-    data: updatedDishData,
-    error: updateError,
-  } = useMutation({
-    mutationFn: ({ id, updates }) => updateDish(id, updates), // Correctly call your API function
+  const updateDishMutation = useMutation({
+    mutationFn: ({ id, updates }) => updateDish(id, updates),
     onSuccess: (data) => {
       enqueueSnackbar(data.message || "Dish updated successfully!", { variant: "success" });
-      queryClient.invalidateQueries(['dishes']); // Invalidate the dishes list to re-fetch
-      onClose(); // Close the modal
-      onDishAdded && onDishAdded(); // Trigger optional callback
+      queryClient.invalidateQueries(['dishes']);
+      onClose();
+      onDishAdded && onDishAdded();
     },
     onError: (error) => {
       const errorMessage = error.response?.data?.message || "Failed to update dish.";
@@ -117,27 +105,38 @@ const AddDishModal = ({ isOpen, onClose, onDishAdded, dish = null }) => {
     },
   });
 
-  // Handle form submission based on whether it's an add or edit operation
+  // Handle form submission
   const onSubmit = (data) => {
+    // Convert variant prices to numbers if they are still strings
+    const dishDataWithParsedPrices = {
+        ...data,
+        variants: data.variants.map(v => ({
+            ...v,
+            price: parseFloat(v.price) // Ensure price is a number
+        }))
+    };
+
     if (isEditMode) {
-      updateDishMutation({ id: dish._id, updates: data }); // Pass dish._id and all form data as updates
+      updateDishMutation({ id: dish._id, updates: dishDataWithParsedPrices });
     } else {
-      addDishMutation.mutate(data); // Trigger add mutation
+      addDishMutation.mutate(dishDataWithParsedPrices);
     }
   };
 
-  // Effect to reset form when modal opens or when `dish` prop changes (for edit mode)
+  // Effect to prefill form for edit mode or reset for add mode
   useEffect(() => {
     if (isOpen) {
-      // When opening, either prefill with dish data or reset to defaults
       if (isEditMode && dish) {
-        // Use reset with the actual dish data
         reset({
           image: dish.image || '',
           name: dish.name || '',
-          price: dish.price || 0,
           type: dish.type || 'main_course',
           category: dish.category || 'veg',
+          variants: dish.variants && dish.variants.length > 0 ?
+                      dish.variants.map(v => ({ // Map existing variants
+                          size: v.size || '',
+                          price: v.price || 0 // Ensure price is treated as a number
+                      })) : [{ size: '', price: '' }], // Fallback to one empty variant if none exist
           description: dish.description || '',
           isAvailable: dish.isAvailable !== undefined ? dish.isAvailable : true,
           isFrequent: dish.isFrequent !== undefined ? dish.isFrequent : false,
@@ -146,10 +145,9 @@ const AddDishModal = ({ isOpen, onClose, onDishAdded, dish = null }) => {
         reset(); // Reset to default values for add mode
       }
     }
-  }, [isOpen, dish, isEditMode, reset]); // Add dish to dependency array
+  }, [isOpen, dish, isEditMode, reset]);
 
-  // Combine loading states for the submit button
-  const isActionPending = isFormSubmitting || addDishMutation.isPending || isUpdating;
+  const isActionPending = isFormSubmitting || addDishMutation.isPending || updateDishMutation.isPending;
 
   return (
     <AnimatePresence>
@@ -225,35 +223,6 @@ const AddDishModal = ({ isOpen, onClose, onDishAdded, dish = null }) => {
                 )}
               </div>
 
-              {/* Price */}
-              <div>
-                <label
-                  htmlFor="price"
-                  className="block text-[#ababab] mb-1 text-sm font-medium"
-                >
-                  Price
-                </label>
-                <input
-                  type="number"
-                  id="price"
-                  step="0.01"
-                  {...register("price", {
-                    required: "Price is required",
-                    min: {
-                      value: 0.01,
-                      message: "Price must be greater than 0",
-                    },
-                    valueAsNumber: true, // Converts input string to number
-                  })}
-                  className="w-full rounded-lg p-3 px-4 bg-[#1f1f1f] text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"
-                />
-                {errors.price && (
-                  <p className="text-red-400 text-xs mt-1">
-                    {errors.price.message}
-                  </p>
-                )}
-              </div>
-
               {/* Type (Select) */}
               <div>
                 <label
@@ -323,6 +292,80 @@ const AddDishModal = ({ isOpen, onClose, onDishAdded, dish = null }) => {
                   </p>
                 )}
               </div>
+
+              {/* Variants Section (NEW) */}
+              <div className="border border-[#333] rounded-lg p-4">
+                <h3 className="text-lg font-semibold mb-3">Dish Variants</h3>
+                {fields.map((field, index) => (
+                  <div key={field.id} className="flex items-center space-x-2 mb-3">
+                    {/* Size Select */}
+                    <div className="flex-grow">
+                      <label htmlFor={`variants.${index}.size`} className="sr-only">Variant Size</label>
+                      <select
+                        id={`variants.${index}.size`}
+                        {...register(`variants.${index}.size`, {
+                          required: 'Size is required',
+                          validate: (value) => {
+                            // Ensure no duplicate sizes within the same dish
+                            const currentVariants = watch('variants');
+                            const sizeCount = currentVariants.filter(v => v.size === value).length;
+                            return sizeCount <= 1 || 'Duplicate size not allowed';
+                          }
+                        })}
+                        className="w-full p-2 rounded bg-[#333] border border-[#555] text-[#f5f5f5] focus:outline-none focus:ring-2 focus:ring-yellow-400 appearance-none"
+                      >
+                        <option value="" disabled>Select Size</option>
+                        {DISH_VARIANT_SIZES.map((size) => (
+                          <option key={size} value={size} className="bg-[#262626] text-white">{size}</option>
+                        ))}
+                      </select>
+                      {errors.variants?.[index]?.size && (
+                        <p className="text-red-400 text-xs mt-1">{errors.variants[index].size.message}</p>
+                      )}
+                    </div>
+
+                    {/* Price Input */}
+                    <div className="w-1/3">
+                      <label htmlFor={`variants.${index}.price`} className="sr-only">Variant Price</label>
+                      <input
+                        type="number"
+                        id={`variants.${index}.price`}
+                        step="0.01"
+                        {...register(`variants.${index}.price`, {
+                          required: 'Price is required',
+                          min: { value: 0, message: 'Price cannot be negative' },
+                          valueAsNumber: true,
+                        })}
+                        className="w-full p-2 rounded bg-[#333] border border-[#555] text-[#f5f5f5] focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                        placeholder="Price"
+                      />
+                      {errors.variants?.[index]?.price && (
+                        <p className="text-red-400 text-xs mt-1">{errors.variants[index].price.message}</p>
+                      )}
+                    </div>
+
+                    {/* Remove Button */}
+                    <button
+                      type="button"
+                      onClick={() => remove(index)}
+                      className="text-red-400 hover:text-red-500 p-2 rounded-full"
+                    >
+                      <IoMdClose size={20} />
+                    </button>
+                  </div>
+                ))}
+                {errors.variants && errors.variants.root && (
+                  <p className="text-red-400 text-xs mt-1">{errors.variants.root.message}</p>
+                )}
+                <button
+                  type="button"
+                  onClick={() => append({ size: '', price: '' })}
+                  className="mt-2 text-blue-400 hover:text-blue-500 font-medium text-sm"
+                >
+                  + Add Another Variant
+                </button>
+              </div>
+              {/* End Variants Section */}
 
               {/* Description (Optional) */}
               <div>

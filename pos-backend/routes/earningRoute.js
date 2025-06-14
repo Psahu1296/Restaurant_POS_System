@@ -1,6 +1,6 @@
 // routes/earningRoutes.js
 const express = require("express");
-const { getDailyEarnings, getPeriodEarnings, calculateAndSaveDailyEarnings } = require("../controllers/earningController");
+const { getDailyEarnings, getPeriodEarnings, calculateAndSaveDailyEarnings, getDashboardEarningsSummary } = require("../controllers/earningController");
 const { isVerifiedUser } = require("../middlewares/tokenVerification"); // Your authentication/authorization middleware
 const router = express.Router();
 
@@ -15,6 +15,7 @@ router.get("/daywise", getDailyEarnings);
 // @route   GET /api/earnings/weekwise (e.g., /api/earnings/weekwise?numPeriods=4)
 // @route   GET /api/earnings/monthwise (e.g., /api/earnings/monthwise?numPeriods=12)
 // @route   GET /api/earnings/yearwise (e.g., /api/earnings/yearwise?numPeriods=5)
+router.get("/dashboard", getDashboardEarningsSummary);
 router.get("/:periodType", getPeriodEarnings);
 
 // NEW ROUTE: To manually trigger daily earning calculation and saving

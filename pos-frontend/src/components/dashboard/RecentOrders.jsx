@@ -21,7 +21,6 @@ import { removeAllItems } from "../../redux/slices/cartSlice";
 const RecentOrders = () => {
   const queryClient = useQueryClient();
   const handleStatusChange = ({ orderId, orderStatus }) => {
-    console.log(orderId);
     orderStatusUpdateMutation.mutate({ orderId, orderStatus });
   };
 
@@ -69,7 +68,6 @@ const RecentOrders = () => {
   const tableUpdateMutation = useMutation({
     mutationFn: (reqData) => updateTable(reqData),
     onSuccess: (resData) => {
-      console.log(resData);
       dispatch(removeCustomer());
       dispatch(removeAllItems());
     },
@@ -77,8 +75,6 @@ const RecentOrders = () => {
       console.log(error);
     },
   });
-
-  console.log(resData?.data?.data);
 
   return (
     <div className="container mx-auto bg-[#262626] p-4 rounded-lg">

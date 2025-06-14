@@ -6,10 +6,11 @@ import RecentOrders from "../components/dashboard/RecentOrders";
 import Modal from "../components/dashboard/Modal";
 import AddDishModal from "../components/dashboard/AddDishModal";
 import DishesList from "../components/dishes/Dishes";
+import AddExpenseModal from "../components/dashboard/AddExpenseModal";
 
 const buttons = [
   { label: "Add Table", icon: <MdTableBar />, action: "table" },
-  { label: "Add Category", icon: <MdCategory />, action: "category" },
+  { label: "Add Expense", icon: <MdCategory />, action: "expenses" },
   { label: "Add Dishes", icon: <BiSolidDish />, action: "dishes" },
 ];
 
@@ -68,6 +69,7 @@ const Dashboard = () => {
 
       {modalType === 'table' && <Modal setIsTableModalOpen={() => setModalType('')} />}
       {modalType === 'dishes' && <AddDishModal isOpen={modalType === 'dishes'} onClose={() => setModalType('')} onDishAdded={() => setModalType('')} />}
+      {modalType === 'expenses' && <AddExpenseModal isOpen={modalType === 'expenses'} onClose={() => setModalType('')} onDishAdded={() => setModalType('')} />}
     </div>
   );
 };

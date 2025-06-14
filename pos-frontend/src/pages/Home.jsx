@@ -25,7 +25,6 @@ const Home = () => {
   const earnings = Math.floor(Number(resData?.data.data.todayEarning || 0));
   const percent = resData?.data.data.percentageChange;
 
-  console.log(resData?.data.data);
   return (
     <section className="bg-[#1f1f1f]  h-[calc(100vh-5rem)] overflow-hidden flex gap-3">
       {/* Left Div */}

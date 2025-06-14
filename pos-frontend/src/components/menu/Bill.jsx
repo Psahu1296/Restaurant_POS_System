@@ -4,6 +4,7 @@ import { getTotalPrice } from "../../redux/slices/cartSlice";
 import {
   addOrder,
   createOrderRazorpay,
+  updateOrder,
   updateTable,
   verifyPaymentRazorpay,
 } from "../../https/index";
@@ -12,6 +13,14 @@ import { useMutation } from "@tanstack/react-query";
 import { removeAllItems } from "../../redux/slices/cartSlice";
 import { removeCustomer } from "../../redux/slices/customerSlice";
 import Invoice from "../invoice/Invoice";
+import {
+  useNavigate,
+  useNavigation,
+  useParams,
+  useRoutes,
+  useSearchParams,
+} from "react-router-dom";
+import PayModal from "./Paymodal";
 
 function loadScript(src) {
   return new Promise((resolve) => {
@@ -29,6 +38,12 @@ function loadScript(src) {
 
 const Bill = () => {
   const dispatch = useDispatch();
+  const [param] = useSearchParams();
+  const [isPayModalOpen, setIsPayModalOpen] = useState(false);
+
+  const orderId = param.get("orderId");
+
+  const navigate = useNavigate();
 
   const customerData = useSelector((state) => state.customer);
   const cartData = useSelector((state) => state.cart);
@@ -37,9 +52,26 @@ const Bill = () => {
   const tax = (total * taxRate) / 100;
   const totalPriceWithTax = total + tax;
 
-  const [paymentMethod, setPaymentMethod] = useState();
+  const [paymentMethod, setPaymentMethod] = useState("Cash");
   const [showInvoice, setShowInvoice] = useState(false);
   const [orderInfo, setOrderInfo] = useState();
+
+  const orderData = {
+    customerDetails: {
+      name: customerData.customerName,
+      phone: customerData.customerPhone,
+      guests: customerData.guests,
+    },
+    orderStatus: "In Progress",
+    bills: {
+      total: Math.floor(total),
+      tax: tax,
+      totalWithTax: Math.floor(totalPriceWithTax),
+    },
+    items: cartData,
+    table: customerData.table.tableId,
+    paymentMethod: paymentMethod,
+  };
 
   const handlePlaceOrder = async () => {
     if (!paymentMethod) {
@@ -81,7 +113,6 @@ const Bill = () => {
           order_id: data.order.id,
           handler: async function (response) {
             const verification = await verifyPaymentRazorpay(response);
-            console.log(verification);
             enqueueSnackbar(verification.data.message, { variant: "success" });
 
             // Place the order
@@ -129,6 +160,7 @@ const Bill = () => {
     } else {
       // Place the order
       const orderData = {
+        id: orderId,
         customerDetails: {
           name: customerData.customerName,
           phone: customerData.customerPhone,
@@ -136,9 +168,9 @@ const Bill = () => {
         },
         orderStatus: "In Progress",
         bills: {
-          total: total,
+          total: Math.floor(total),
           tax: tax,
-          totalWithTax: totalPriceWithTax,
+          totalWithTax: Math.floor(totalPriceWithTax),
         },
         items: cartData,
         table: customerData.table.tableId,
@@ -149,13 +181,15 @@ const Bill = () => {
   };
 
   const orderMutation = useMutation({
-    mutationFn: (reqData) => addOrder(reqData),
+    mutationFn: (reqData) =>
+      reqData.id ? updateOrder(reqData) : addOrder(reqData),
     onSuccess: (resData) => {
       const { data } = resData.data;
+
       console.log(data);
 
       setOrderInfo(data);
-
+      
       // Update Table
       const tableData = {
         status: "Booked",
@@ -170,7 +204,8 @@ const Bill = () => {
       enqueueSnackbar("Order Placed!", {
         variant: "success",
       });
-      setShowInvoice(true);
+      // setShowInvoice(true);
+      navigate("/" , { replace: true });
     },
     onError: (error) => {
       console.log(error);
@@ -180,14 +215,47 @@ const Bill = () => {
   const tableUpdateMutation = useMutation({
     mutationFn: (reqData) => updateTable(reqData),
     onSuccess: (resData) => {
-      console.log(resData);
       dispatch(removeCustomer());
       dispatch(removeAllItems());
+
     },
     onError: (error) => {
       console.log(error);
     },
   });
+
+
+    const orderPaymentMutation = useMutation({
+    mutationFn: (reqData) => updatePaymentStatus({ orderId: reqData.id, paymentStatus: "Pending" }),
+    onSuccess: (resData) => {
+      const { data } = resData.data;
+
+      console.log(data);
+
+      setOrderInfo(data);
+      
+      // Update Table
+      const tableData = {
+        status: "Booked",
+        orderId: data._id,
+        tableId: data.table,
+      };
+
+      setTimeout(() => {
+        tableUpdateMutation.mutate(tableData);
+      }, 1500);
+
+      enqueueSnackbar("Order Placed!", {
+        variant: "success",
+      });
+      // setShowInvoice(true);
+    },
+    onError: (error) => {
+      console.log(error);
+    },
+  });
+
+
 
   return (
     <>
@@ -221,6 +289,7 @@ const Bill = () => {
           Cash
         </button>
         <button
+          disabled
           onClick={() => setPaymentMethod("Online")}
           className={`bg-[#1f1f1f] px-4 py-3 w-full rounded-lg text-[#ababab] font-semibold ${
             paymentMethod === "Online" ? "bg-[#383737]" : ""
@@ -230,21 +299,27 @@ const Bill = () => {
         </button>
       </div>
 
-      <div className="flex items-center gap-3 px-5 mt-4">
-        <button className="bg-[#025cca] px-4 py-3 w-full rounded-lg text-[#f5f5f5] font-semibold text-lg">
-          Print Receipt
-        </button>
+      <div className="flex flex-col items-center gap-3 px-5 mt-4">
         <button
           onClick={handlePlaceOrder}
           className="bg-[#f6b100] px-4 py-3 w-full rounded-lg text-[#1f1f1f] font-semibold text-lg"
         >
           Place Order
         </button>
+        <button disabled={!orderId} className="px-4 py-3 w-full rounded-lg bg-[#2e4a40] text-[#02ca3a]  font-semibold text-lg" onClick={() => setIsPayModalOpen(true)}>
+          Pay
+        </button>
       </div>
 
       {showInvoice && (
         <Invoice orderInfo={orderInfo} setShowInvoice={setShowInvoice} />
       )}
+      <PayModal
+        isOpen={isPayModalOpen}
+        onClose={() => setIsPayModalOpen(false)}
+        order={{_id: orderId, ...orderData}} // Pass the order info
+        customerData={customerData}
+      />
     </>
   );
 };

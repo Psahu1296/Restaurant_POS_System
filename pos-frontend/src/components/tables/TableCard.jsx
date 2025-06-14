@@ -25,7 +25,7 @@ const TableCard = ({ id, name, status, initials, seats, orderId }) => {
     e.preventDefault();
     const tableData = {
       status: status === "Booked" ? "Available" : "Booked",
-      orderId: orderId,
+      orderId: status === "Booked" ? null : orderId,
       tableId: id,
     };
 
@@ -35,7 +35,6 @@ const TableCard = ({ id, name, status, initials, seats, orderId }) => {
   const tableUpdateMutation = useMutation({
     mutationFn: (reqData) => updateTable(reqData),
     onSuccess: (resData) => {
-      console.log(resData);
       dispatch(removeCustomer());
       dispatch(removeAllItems());
       window.location.reload()

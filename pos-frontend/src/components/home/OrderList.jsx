@@ -2,10 +2,29 @@ import React from "react";
 import { FaCheckDouble, FaLongArrowAltRight } from "react-icons/fa";
 import { FaCircle } from "react-icons/fa";
 import { getAvatarName } from "../../utils/index";
+import { useDispatch } from "react-redux";
+import { useNavigate } from "react-router-dom";
+import { addItems, updateList } from "../../redux/slices/cartSlice";
+import {
+  updateTable as tableStateUpdate,
+} from "../../redux/slices/customerSlice";
+import { setCustomer } from "../../redux/slices/customerSlice";
 
 const OrderList = ({ key, order }) => {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const onOrderClick = () => {
+    const { customerDetails, table, items } = order;
+    dispatch(setCustomer({...customerDetails,...table}));
+    dispatch(tableStateUpdate({ table }));
+    dispatch(updateList([...items]));
+    navigate(`/menu?orderId=${order._id}`);
+  };
   return (
-    <div className="flex items-center gap-5 mb-3">
+    <div
+      className="flex items-center gap-5 mb-3 hover:bg-[#262626] p-4 rounded-lg cursor-pointer"
+      onClick={onOrderClick}
+    >
       <button className="bg-[#f6b100] p-3 text-xl font-bold rounded-lg">
         {getAvatarName(order.customerDetails.name)}
       </button>
@@ -17,7 +36,7 @@ const OrderList = ({ key, order }) => {
           <p className="text-[#ababab] text-sm">{order.items.length} Items</p>
         </div>
 
-        <h1 className="text-[#f6b100] font-semibold border border-[#f6b100] rounded-lg p-1">
+        <h1 className="text-[#f6b100] font-semibold border border-[#f6b100] rounded-lg p-1 ">
           Table <FaLongArrowAltRight className="text-[#ababab] ml-2 inline" />{" "}
           {order.table.tableNo}
         </h1>
